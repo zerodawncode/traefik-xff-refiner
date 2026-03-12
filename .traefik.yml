@@ -2,7 +2,7 @@
 
 displayName: "Traefik XFF Refiner"
 type: middleware
-iconPath: .assets/icon.png
+iconPath: .assets/icon.svg
 import: github.com/zerodawncode/traefik-xff-refiner
 
 summary: |

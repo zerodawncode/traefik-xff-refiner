@@ -1,4 +1,4 @@
-package traefik_xff_refiner
+package main
 
 import (
 	"context"
