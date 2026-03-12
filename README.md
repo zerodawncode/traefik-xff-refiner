@@ -1,4 +1,4 @@
-<p align="center"><img src="https://github.com/zerodawncode/traefik-xff-refiner/blob/main/.assets/icon.svg?raw=true" alt="logo" height="96" width="96"></p>
+<p align="center"><img src="https://github.com/zerodawncode/traefik-xff-refiner/blob/main/.assets/icon.svg?raw=true" alt="logo" height="150" width="150"></p>
 
 # 🛡️ Zerodawn XFF Refiner
 
@@ -32,7 +32,7 @@ experimental:
   plugins:
     traefik-xff-refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
-      version: v0.1.2
+      version: v1.0.0
 ```
 
 ### 2. Dynamic Middleware Configuration
