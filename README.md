@@ -30,7 +30,7 @@ Add the plugin to your Traefik static configuration:
 ```yaml
 experimental:
   plugins:
-    traefik-xff-refiner:
+    traefik_xff_refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
       version: v1.0.0
 ```
@@ -44,7 +44,7 @@ http:
   middlewares:
     xff-refiner:
       plugin:
-        traefik-xff-refiner:
+        traefik_xff_refiner:
           depth: 0              # 0 = leftmost (client), -1 = rightmost (immediate peer)
           overrideRemoteAddr: true # Ensure backend sees exactly one IP in XFF
 ```

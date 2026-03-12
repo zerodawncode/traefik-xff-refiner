@@ -50,7 +50,7 @@ flowchart TD
 ```yaml
 experimental:
   plugins:
-    traefik-xff-refiner:
+    traefik_xff_refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
       version: v0.1.2
 ```
@@ -61,7 +61,7 @@ http:
   middlewares:
     xff-refiner:
       plugin:
-        traefik-xff-refiner:
+        traefik_xff_refiner:
           depth: 1
 ```
 
