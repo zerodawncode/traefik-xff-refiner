@@ -28,7 +28,7 @@ func CreateConfig() *Config {
 	}
 }
 
-// Middleware is the XFF refiner middleware.
+// Middleware is the traefik-xff-refiner middleware.
 type Middleware struct {
 	next               http.Handler
 	depth              int

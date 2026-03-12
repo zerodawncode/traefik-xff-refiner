@@ -1,6 +1,6 @@
 # .traefik.yml
 
-displayName: "Traefik XFF Refiner"
+displayName: "traefik-xff-refiner"
 type: middleware
 iconPath: .assets/icon.svg
 import: github.com/zerodawncode/traefik-xff-refiner

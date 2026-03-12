@@ -1,8 +1,8 @@
 <p align="center"><img src="https://github.com/zerodawncode/traefik-xff-refiner/blob/main/.assets/icon.svg?raw=true" alt="logo" height="150" width="150"></p>
 
-# 🛡️ Zerodawn XFF Refiner
+# 🛡️ traefik-xff-refiner
 
-**Zerodawn XFF Refiner** is a high-performance [Traefik](https://traefik.io) plugin designed to intelligently refine the `X-Forwarded-For` header. It allows you to select a specific IP address from the request chain and ensure it is the only one passed to your backend services.
+**traefik-xff-refiner** is a high-performance [Traefik](https://traefik.io) plugin designed to intelligently refine the `X-Forwarded-For` header. It allows you to select a specific IP address from the request chain and ensure it is the only one passed to your backend services.
 
 ## ✨ Features
 
@@ -30,9 +30,9 @@ Add the plugin to your Traefik static configuration:
 ```yaml
 experimental:
   plugins:
-    traefik_xff_refiner:
+    traefik-xff-refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
-      version: v1.0.0
+      version: v1.0.1
 ```
 
 ### 2. Dynamic Middleware Configuration
@@ -44,7 +44,7 @@ http:
   middlewares:
     xff-refiner:
       plugin:
-        traefik_xff_refiner:
+        traefik-xff-refiner:
           depth: 0              # 0 = leftmost (client), -1 = rightmost (immediate peer)
           overrideRemoteAddr: true # Ensure backend sees exactly one IP in XFF
 ```
