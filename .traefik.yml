@@ -1,0 +1,15 @@
+# .traefik.yml
+
+displayName: "Traefik XFF Refiner"
+type: middleware
+iconPath: .assets/icon.png
+import: github.com/zerodawncode/traefik-xff-refiner
+
+summary: |
+  ✨ Pinpoint the correct client IP and refine X-Forwarded-For headers! 
+  This Traefik plugin selects an IP from XFF based on depth, forces it to 
+  be the only IP in XFF, and sets additional tracking headers.
+
+testData:
+  depth: 1
+  overrideRemoteAddr: true
