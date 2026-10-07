@@ -36,7 +36,7 @@ experimental:
   plugins:
     traefik-xff-refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
-      version: v1.0.2
+      version: v1.0.3
 ```
 
 ### 2. Dynamic Middleware Configuration
