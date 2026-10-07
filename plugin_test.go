@@ -76,6 +76,42 @@ func TestXFFRefiner(t *testing.T) {
 			expectHeaderSet: true,
 		},
 		{
+			name:            "selected entry is not an IP: fall back to RemoteAddr",
+			xffHeader:       "localhost, 203.0.113.5",
+			configDepth:     0,
+			expectedIP:      "192.0.2.1", // RemoteAddr
+			expectHeaderSet: true,
+		},
+		{
+			name:            "depth beyond chain length: fall back to RemoteAddr",
+			xffHeader:       "203.0.113.5",
+			configDepth:     5,
+			expectedIP:      "192.0.2.1", // RemoteAddr
+			expectHeaderSet: true,
+		},
+		{
+			name:            "negative depth beyond chain length: fall back to RemoteAddr",
+			xffHeader:       "",
+			configDepth:     -2,
+			expectedIP:      "192.0.2.1", // RemoteAddr
+			expectHeaderSet: true,
+		},
+		{
+			name:               "forged localhost with override: backend sees RemoteAddr",
+			xffHeader:          "localhost",
+			configDepth:        0,
+			expectedIP:         "192.0.2.1",
+			expectHeaderSet:    true,
+			overrideRemoteAddr: true,
+		},
+		{
+			name:            "IPv6 entry is accepted",
+			xffHeader:       "2001:db8::1, 203.0.113.5",
+			configDepth:     0,
+			expectedIP:      "2001:db8::1",
+			expectHeaderSet: true,
+		},
+		{
 			name:               "override remote addr enabled",
 			xffHeader:          "203.0.113.5, 10.0.0.1",
 			configDepth:        0,

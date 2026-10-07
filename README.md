@@ -18,8 +18,12 @@
 For every incoming request, the plugin:
 1. Parses the `X-Forwarded-For` header and includes the direct `RemoteAddr`.
 2. Extracts the IP based on your configured `depth` (defaults to `0`, the first/client IP).
-3. Updates `X-Forwarded-For`, `X-Real-Ip`, and `X-Forwarded-For-Proxy-Protocol` to this selected IP.
-4. If `overrideRemoteAddr` is `true` (default), it clears the `X-Forwarded-For` header so Traefik appends *only* your selected IP.
+3. Validates that the selected entry is a real IPv4/IPv6 address. If it is not (for
+   example a forged `X-Forwarded-For: localhost`), or if `depth` points outside the
+   chain, it falls back to the immediate peer (`RemoteAddr`), the one hop a client
+   cannot forge.
+4. Updates `X-Forwarded-For`, `X-Real-Ip`, and `X-Forwarded-For-Proxy-Protocol` to this selected IP.
+5. If `overrideRemoteAddr` is `true` (default), it clears the `X-Forwarded-For` header so Traefik appends *only* your selected IP.
 
 ## 🚀 Installation & Usage
 
@@ -32,7 +36,7 @@ experimental:
   plugins:
     traefik-xff-refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
-      version: v1.0.1
+      version: v1.0.2
 ```
 
 ### 2. Dynamic Middleware Configuration
@@ -45,9 +49,24 @@ http:
     xff-refiner:
       plugin:
         traefik-xff-refiner:
-          depth: 0              # 0 = leftmost (client), -1 = rightmost (immediate peer)
+          depth: -2             # see "Choosing depth" below
           overrideRemoteAddr: true # Ensure backend sees exactly one IP in XFF
 ```
+
+### 3. Choosing `depth`
+
+`X-Forwarded-For` is client supplied: anything to the left of what your trusted
+proxies append is under the attacker's control. Count from the right, never the left:
+
+| Topology | `depth` | Why |
+|---|---|---|
+| Traefik is the first proxy the client reaches | `-1` | `RemoteAddr` is the client |
+| Cloudflare (or any proxy that *appends* the visitor IP) in front of Traefik | `-2` | the hop before the edge is the visitor |
+
+`depth: 0` (the default, kept for backward compatibility) selects the leftmost entry and
+should only be used when Traefik's `forwardedHeaders.trustedIPs` already guarantees the
+header was rewritten by a trusted hop. Since v1.0.2 a non-IP entry at the selected depth
+can no longer reach the backend, but a *valid-looking* forged IP still can.
 
 ## 📝 License
 

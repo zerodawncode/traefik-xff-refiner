@@ -10,8 +10,12 @@ import (
 
 // Config holds the middleware configuration.
 type Config struct {
-	// Depth is the index of the IP address to select from the X-Forwarded-For header.
-	// Defaults to 0 (the first IP).
+	// Depth is the index of the IP address to select from the X-Forwarded-For header,
+	// with RemoteAddr appended as the final entry. Negative values count from the
+	// right (-1 = RemoteAddr, -2 = the hop before it). Defaults to 0 (the first IP).
+	//
+	// Depth 0 trusts whatever the client put in X-Forwarded-For. Behind a proxy that
+	// appends the visitor address (Cloudflare does), use -2; without one, use -1.
 	Depth int `json:"depth,omitempty" yaml:"depth,omitempty" mapstructure:"depth,omitempty"`
 
 	// OverrideRemoteAddr, if true, sets the request's RemoteAddr to the selected IP.
@@ -47,6 +51,22 @@ func New(ctx context.Context, next http.Handler, config *Config, name string) (h
 	}, nil
 }
 
+// remoteIP returns the host part of req.RemoteAddr with any port removed.
+func remoteIP(req *http.Request) string {
+	host, _, err := net.SplitHostPort(req.RemoteAddr)
+	if err == nil && host != "" {
+		return host
+	}
+	return req.RemoteAddr
+}
+
+// validIP reports whether s parses as an IPv4 or IPv6 address. Values such as
+// "localhost", "unknown" or an empty string are rejected so that a client-supplied
+// X-Forwarded-For entry can never be handed to the backend as the client address.
+func validIP(s string) bool {
+	return net.ParseIP(strings.TrimSpace(s)) != nil
+}
+
 // ServeHTTP handles the HTTP request.
 func (m *Middleware) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Collect all IPs from X-Forwarded-For
@@ -62,11 +82,9 @@ func (m *Middleware) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// Also include RemoteAddr as the last hop in the chain
-	remoteAddr, _, err := net.SplitHostPort(req.RemoteAddr)
-	if err == nil && remoteAddr != "" {
-		ips = append(ips, remoteAddr)
-	} else if req.RemoteAddr != "" {
-		ips = append(ips, req.RemoteAddr)
+	remote := remoteIP(req)
+	if remote != "" {
+		ips = append(ips, remote)
 	}
 
 	if len(ips) > 0 {
@@ -76,37 +94,41 @@ func (m *Middleware) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			index = len(ips) + index
 		}
 
-		// Ensure the configured depth is within the bounds of the available IPs.
-		if index >= 0 && index < len(ips) {
-			selectedIP := ips[index]
-
-			// Keep original XFF chain if needed (including RemoteAddr for completeness)
-			fullXFF := strings.Join(ips, ", ")
-			req.Header.Set("X-Original-Forwarded-For", fullXFF)
-
-			// If override is enabled, update req.RemoteAddr to the selected IP
-			if m.overrideRemoteAddr {
-				// We should keep the port if possible
-				_, port, err := net.SplitHostPort(req.RemoteAddr)
-				if err == nil && port != "" {
-					req.RemoteAddr = net.JoinHostPort(selectedIP, port)
-				} else {
-					req.RemoteAddr = selectedIP
-				}
-				// Clear X-Forwarded-For header so that Traefik's subsequent
-				// append results in exactly one IP (the selected IP)
-				req.Header.Del("X-Forwarded-For")
-			} else {
-				// Standard behavior: just set X-Forwarded-For to the selected IP
-				req.Header.Set("X-Forwarded-For", selectedIP)
-			}
-
-			// Set additional headers as requested
-			req.Header.Set("X-Forwarded-For-Proxy-Protocol", selectedIP)
-
-			// Also setting X-Real-Ip for backward compatibility or general usefulness
-			req.Header.Set("X-Real-Ip", selectedIP)
+		// Select the configured hop. If the depth is outside the chain, or the
+		// selected entry is not an IP address at all (X-Forwarded-For is client
+		// supplied and may contain anything), fall back to the immediate peer
+		// (RemoteAddr), which is the only hop that cannot be forged by the client.
+		selectedIP := remote
+		if index >= 0 && index < len(ips) && validIP(ips[index]) {
+			selectedIP = ips[index]
 		}
+
+		// Keep original XFF chain if needed (including RemoteAddr for completeness)
+		fullXFF := strings.Join(ips, ", ")
+		req.Header.Set("X-Original-Forwarded-For", fullXFF)
+
+		// If override is enabled, update req.RemoteAddr to the selected IP
+		if m.overrideRemoteAddr {
+			// We should keep the port if possible
+			_, port, err := net.SplitHostPort(req.RemoteAddr)
+			if err == nil && port != "" {
+				req.RemoteAddr = net.JoinHostPort(selectedIP, port)
+			} else {
+				req.RemoteAddr = selectedIP
+			}
+			// Clear X-Forwarded-For header so that Traefik's subsequent
+			// append results in exactly one IP (the selected IP)
+			req.Header.Del("X-Forwarded-For")
+		} else {
+			// Standard behavior: just set X-Forwarded-For to the selected IP
+			req.Header.Set("X-Forwarded-For", selectedIP)
+		}
+
+		// Set additional headers as requested
+		req.Header.Set("X-Forwarded-For-Proxy-Protocol", selectedIP)
+
+		// Also setting X-Real-Ip for backward compatibility or general usefulness
+		req.Header.Set("X-Real-Ip", selectedIP)
 	}
 	m.next.ServeHTTP(rw, req)
 }

@@ -13,7 +13,7 @@ This project implements **traefik-xff-refiner**, a Traefik plugin that intellige
 
 ## 3. Features
 - Parses `X-Forwarded-For` header and splits it into a list of IPs.
-- Selects an IP based on the specified `depth` (default: 0).
+- Selects an IP based on the specified `depth` (default: 0); a non-IP entry or an out-of-range depth falls back to `RemoteAddr`.
 - Overwrites `X-Forwarded-For` with the selected IP.
 - Sets `X-Original-Forwarded-For` with the original value.
 - Sets `X-Forwarded-For-Proxy-Protocol` and `X-Real-Ip` with the selected IP.
@@ -25,9 +25,10 @@ flowchart TD
     B -- No --> Z[Proceed Normally]
     B -- Yes --> C[Split X-Forwarded-For by ,]
     C --> D[Extract IP at Configured Depth]
-    D --> E{Valid Depth Index?}
-    E -- No --> Z
+    D --> E{Index in range and entry is an IP?}
+    E -- No --> Y[Fall back to RemoteAddr]
     E -- Yes --> F[Set X-Forwarded-For, X-Real-IP, etc. with Selected IP]
+    Y --> F
     F --> G[Forward Request to Backend]
     Z --> G
 
@@ -52,7 +53,7 @@ experimental:
   plugins:
     traefik-xff-refiner:
       moduleName: github.com/zerodawncode/traefik-xff-refiner
-      version: v1.0.1
+      version: v1.0.2
 ```
 
 ### Dynamic Middleware:
